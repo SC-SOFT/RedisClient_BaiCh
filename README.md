@@ -1,0 +1,2 @@
+# RedisClient_BaiCh
+目标是一个简单易用的Redis客户端
