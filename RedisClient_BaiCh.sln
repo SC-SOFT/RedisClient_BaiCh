@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisClient_BaiCh", "RedisClient_BaiCh\RedisClient_BaiCh.csproj", "{58FD819B-3241-429E-AB94-3F976F24C7AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tester", "Tester\Tester.csproj", "{6517BD0F-40D1-4A30-BCA1-89577D6D08C6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TesterWinform", "TesterWinform\TesterWinform.csproj", "{465C432A-97E8-4E14-AEDE-02F1B14DB8BA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{58FD819B-3241-429E-AB94-3F976F24C7AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58FD819B-3241-429E-AB94-3F976F24C7AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58FD819B-3241-429E-AB94-3F976F24C7AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58FD819B-3241-429E-AB94-3F976F24C7AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6517BD0F-40D1-4A30-BCA1-89577D6D08C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6517BD0F-40D1-4A30-BCA1-89577D6D08C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6517BD0F-40D1-4A30-BCA1-89577D6D08C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6517BD0F-40D1-4A30-BCA1-89577D6D08C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{465C432A-97E8-4E14-AEDE-02F1B14DB8BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{465C432A-97E8-4E14-AEDE-02F1B14DB8BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{465C432A-97E8-4E14-AEDE-02F1B14DB8BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{465C432A-97E8-4E14-AEDE-02F1B14DB8BA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
