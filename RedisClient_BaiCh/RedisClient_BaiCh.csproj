@@ -42,8 +42,10 @@
     <Compile Include="RedisClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RedisCmdReturn.cs" />
+    <Compile Include="RedisCmdReturnAuth.cs" />
     <Compile Include="RedisCmdReturnQuit.cs" />
     <Compile Include="RedisCmdReturnGet.cs" />
+    <Compile Include="RedisCmdReturnKeys.cs" />
     <Compile Include="RedisCmdReturnSet.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -12,8 +12,19 @@ namespace RedisClient_BaiCh
 {
     public class RedisClient : IDisposable
     {
+        /// <summary>
+        /// 服务器IP
+        /// </summary>
         public string ServerIp { get; set; }
+        /// <summary>
+        /// 服务器端口
+        /// </summary>
         public int ServerPort { get; set; }
+        /// <summary>
+        /// 密码
+        /// </summary>
+        public string Auth { get; set; }
+
         private readonly Stopwatch _commandStopWatch = new Stopwatch();
         //private const int BufferSize = 4;//1024 * 256;  //接收数据的缓冲区大小byte
         private const int SendTimeout = 10000;  //发送超时时间ms
@@ -31,6 +42,24 @@ namespace RedisClient_BaiCh
         /// </summary>
         /// <param name="serverIp">服务器IP</param>
         /// <param name="serverPort">服务器端口</param>
+        /// <param name="auth">服务器密码</param>
+        public RedisClient(string serverIp, int serverPort,string auth)
+        {
+            ServerIp = serverIp;
+            ServerPort = serverPort;
+            Auth = auth;
+            InitTcpClient();
+            _tcpClient.Connect(serverIp, serverPort);
+            AuthAsync().Wait();
+
+            //KeepConnection();
+        }
+
+        /// <summary>
+        /// ctor
+        /// </summary>
+        /// <param name="serverIp">服务器IP</param>
+        /// <param name="serverPort">服务器端口</param>
         public RedisClient(string serverIp, int serverPort)
         {
             ServerIp = serverIp;
@@ -40,7 +69,10 @@ namespace RedisClient_BaiCh
 
             //KeepConnection();
         }
-        
+
+        /// <summary>
+        /// 
+        /// </summary>
         private void InitTcpClient()
         {
             _tcpClient = new TcpClient
@@ -48,6 +80,35 @@ namespace RedisClient_BaiCh
                 SendTimeout = SendTimeout,
                 ReceiveTimeout = ReceiveTimeout
             };
+        }
+
+        /// <summary>
+        /// Auth
+        /// </summary>
+        /// <returns></returns>
+        public Task<RedisCmdReturnAuth> AuthAsync()
+        {
+            if (string.IsNullOrEmpty(Auth))
+            {
+                throw new Exception("没有设置密码");
+            }
+
+            var rtn = new Task<RedisCmdReturnAuth>(delegate
+            {
+
+                var sb = new StringBuilder();
+                sb.Append("Auth ");
+                sb.Append(Auth);
+                sb.Append("\r\n");
+
+                var res = Command(sb.ToString());
+
+                var redisCmdReturnAuth = new RedisCmdReturnAuth(res.First());
+
+                return redisCmdReturnAuth;
+            });
+            rtn.Start();
+            return rtn;
         }
 
         /// <summary>
@@ -60,7 +121,6 @@ namespace RedisClient_BaiCh
         {
             var rtn = new Task<RedisCmdReturnSet>(delegate
             {
-                var redisCmdReturnSet = new RedisCmdReturnSet();
 
                 var sb = new StringBuilder();
                 sb.Append("set ");
@@ -69,10 +129,7 @@ namespace RedisClient_BaiCh
                 sb.Append(value);
                 sb.Append("\r\n");
                 var res = Command(sb.ToString());
-
-                redisCmdReturnSet.Msg = res.First().SimpleString;
-                redisCmdReturnSet.RemoteExecuteTime = res.First().ExecuteTime;
-
+                var redisCmdReturnSet = new RedisCmdReturnSet(res.First());
                 return redisCmdReturnSet;
             });
             rtn.Start();
@@ -88,33 +145,48 @@ namespace RedisClient_BaiCh
         {
             var rtn = new Task<RedisCmdReturnGet>(delegate
             {
-                var redisCmdReturnGet = new RedisCmdReturnGet();
 
                 var sb = new StringBuilder();
                 sb.Append("get ");
                 sb.Append(key);
                 sb.Append("\r\n");
                 var res = Command(sb.ToString());
-                redisCmdReturnGet.Msg = "OK";
-                redisCmdReturnGet.RemoteExecuteTime = res.First().ExecuteTime;
-                redisCmdReturnGet.Data = res.First().BulkStrings;
+                var redisCmdReturnGet = new RedisCmdReturnGet(res.First());
                 return redisCmdReturnGet;
             });
             rtn.Start();
             return rtn;
         }
 
-        public Task<RedisCmdReturnQuit> Quit()
+        /// <summary>
+        /// Quit
+        /// </summary>
+        /// <returns></returns>
+        public Task<RedisCmdReturnQuit> QuitAsync()
         {
             var rtn = new Task<RedisCmdReturnQuit>(delegate
             {
-                var redisCmdReturnQuit = new RedisCmdReturnQuit();
 
                 var res = Command("Quit");
-                redisCmdReturnQuit.Msg = "OK";
-                redisCmdReturnQuit.RemoteExecuteTime = res.First().ExecuteTime;
-                redisCmdReturnQuit.Data = res.First().SimpleString;
+                var redisCmdReturnQuit = new RedisCmdReturnQuit(res.First());
                 return redisCmdReturnQuit;
+            });
+            rtn.Start();
+            return rtn;
+        }
+
+        /// <summary>
+        /// Keys
+        /// </summary>
+        /// <returns></returns>
+        public Task<RedisCmdReturnKeys> Keys()
+        {
+            var rtn = new Task<RedisCmdReturnKeys>(delegate
+            {
+
+                var res = Command("Quit");
+                var redisCmdReturnKeys = new RedisCmdReturnKeys(res.First());
+                return redisCmdReturnKeys;
             });
             rtn.Start();
             return rtn;
@@ -171,6 +243,10 @@ namespace RedisClient_BaiCh
                         break;
                     case "*":  //多块回复
                         var blockCount = int.Parse(Read2NextRN());
+                        if (blockCount==0)
+                        {
+                            break;
+                        }
                         var forCount = blockCount * 2;
                         var data = Read2NextRN(forCount, -1);
                         commandMethodReturn.Arrays = data;
@@ -227,7 +303,8 @@ namespace RedisClient_BaiCh
                 lastBuffer = b;
             }
             stringRead = Encoding.UTF8.GetString(byteList.ToArray());
-            return stringRead.TrimEnd('\n').TrimEnd('\r');
+            //byteList.RemoveRange(byteList.Count - 2, 2);
+            return stringRead.TrimEnd('\n', '\r');
         }
 
         /// <summary>
@@ -291,10 +368,10 @@ namespace RedisClient_BaiCh
                     lastBuffer = b;
                 }
             }
-
-
+            
+            //byteList.RemoveRange(byteList.Count-2,2);
             stringRead = Encoding.UTF8.GetString(byteList.ToArray());
-            return stringRead.TrimEnd('\n').TrimEnd('\r');
+            return stringRead.TrimEnd('\n', '\r');
         }
 
         #region 连接保障
@@ -378,28 +455,43 @@ namespace RedisClient_BaiCh
 
     public class CommandMethodReturn
     {
+        /// <summary>
+        /// +
+        /// </summary>
         public string SimpleString { get; set; }
+        /// <summary>
+        /// -
+        /// </summary>
         public string Error { get; set; }
+        /// <summary>
+        /// :
+        /// </summary>
         public int Integer { get; set; }
+        /// <summary>
+        /// $
+        /// </summary>
         public string BulkStrings { get; set; }
+        /// <summary>
+        /// *
+        /// </summary>
         public string Arrays { get; set; }
         public double ExecuteTime { get; set; }
 
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.Append("SimpleString：");
+            sb.Append("+SimpleString：");
             sb.AppendLine(SimpleString);
-            sb.Append("Error：");
+            sb.Append("-Error：");
             sb.AppendLine(Error);
-            sb.Append("Integer：");
+            sb.Append(":Integer：");
             sb.AppendLine(Integer.ToString());
-            sb.Append("BulkStrings：");
+            sb.Append("$BulkStrings：");
             sb.AppendLine(BulkStrings);
-            sb.Append("Arrays：");
+            sb.Append("*Arrays：");
             sb.AppendLine(Arrays);
-            sb.Append("ExecuteTime：");
-            sb.AppendLine(ExecuteTime.ToString("F7"));
+            sb.Append("ExecuteTime(ms)：");
+            sb.AppendLine((ExecuteTime*1000).ToString("F7"));
 
             return sb.ToString();
         }

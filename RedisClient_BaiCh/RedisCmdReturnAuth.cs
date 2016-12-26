@@ -6,11 +6,11 @@ using System.Text;
 
 namespace RedisClient_BaiCh
 {
-    public class RedisCmdReturnQuit : RedisCmdReturn
+    public class RedisCmdReturnAuth : RedisCmdReturn
     {
-        public RedisCmdReturnQuit(CommandMethodReturn commandMethodReturn) : base(commandMethodReturn)
+        public RedisCmdReturnAuth(CommandMethodReturn commandMethodReturn) : base(commandMethodReturn)
         {
-
+            
         }
     }
 }

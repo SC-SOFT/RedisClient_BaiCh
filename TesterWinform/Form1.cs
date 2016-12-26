@@ -14,7 +14,7 @@ namespace TesterWinform
 {
     public partial class Form1 : Form
     {
-        RedisClient _redisClient = new RedisClient("192.168.25.171", 6379);
+        readonly RedisClient _redisClient = new RedisClient("192.168.25.171", 6379,"7654321");
 
         public Form1()
         {
@@ -54,7 +54,6 @@ namespace TesterWinform
             var taskListSet = new List<Task<RedisCmdReturnSet>>();
             for (int i = 0; i < 20000; i++)
             {
-
                 taskListSet.Add(_redisClient.SetAsync(i.ToString(), i.ToString())); ;
                 Text = i.ToString();
             }
@@ -82,6 +81,68 @@ namespace TesterWinform
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             _redisClient.Dispose();
+        }
+
+        private void 次插入ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var taskListSet = new List<Task<RedisCmdReturnSet>>();
+            for (int i = 0; i < 10000; i++)
+            {
+                taskListSet.Add(_redisClient.SetAsync(i.ToString(), i.ToString()));
+            }
+            Task.WaitAll(taskListSet.ToArray());
+            sw.Stop();
+            MessageBox.Show(sw.Elapsed.TotalSeconds.ToString("F7"));
+        }
+
+        private void 次读取ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var taskList = new List<Task<RedisCmdReturnGet>>();
+            for (int i = 0; i < 10000; i++)
+            {
+                taskList.Add(_redisClient.GetAsync(i.ToString()));
+            }
+            Task.WaitAll(taskList.ToArray());
+            sw.Stop();
+            MessageBox.Show(sw.Elapsed.TotalSeconds.ToString("F7"));
+        }
+
+        private void 次管道插入ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var sw = new Stopwatch();
+            var sb = new StringBuilder();
+            for (int i = 0; i < 100000; i++)
+            {
+                sb.Append("set key");
+                sb.Append(i);
+                sb.Append(" ");
+                sb.Append(i);
+                sb.Append("\r\n");
+            }
+            sw.Start();
+            _redisClient.Command(sb.ToString());
+            sw.Stop();
+            MessageBox.Show(sw.Elapsed.TotalSeconds.ToString("F7"));
+        }
+
+        private void 次管道读取ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var sw = new Stopwatch();
+            var sb = new StringBuilder();
+            for (int i = 0; i < 100000; i++)
+            {
+                sb.Append("get key");
+                sb.Append(i);
+                sb.Append("\r\n");
+            }
+            sw.Start();
+            _redisClient.Command(sb.ToString());
+            sw.Stop();
+            MessageBox.Show(sw.Elapsed.TotalSeconds.ToString("F7"));
         }
     }
 }

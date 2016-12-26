@@ -16,5 +16,11 @@ namespace RedisClient_BaiCh
         /// 远程执行时间（命令往返）
         /// </summary>
         public double RemoteExecuteTime { get; set; }
+
+        public RedisCmdReturn(CommandMethodReturn commandMethodReturn)
+        {
+            Msg = string.IsNullOrEmpty(commandMethodReturn.Error) ? "OK" : commandMethodReturn.Error;
+            RemoteExecuteTime = commandMethodReturn.ExecuteTime;
+        }
     }
 }

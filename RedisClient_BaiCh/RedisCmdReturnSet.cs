@@ -8,5 +8,9 @@ namespace RedisClient_BaiCh
 {
     public class RedisCmdReturnSet: RedisCmdReturn
     {
+        public RedisCmdReturnSet(CommandMethodReturn commandMethodReturn) : base(commandMethodReturn)
+        {
+
+        }
     }
 }
