@@ -1,0 +1,11 @@
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\bin\Debug\TesterWinform.exe
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\bin\Debug\TesterWinform.pdb
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\bin\Debug\RedisClient_BaiCh.dll
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\bin\Debug\RedisClient_BaiCh.pdb
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\obj\Debug\TesterWinform.csprojResolveAssemblyReference.cache
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\obj\Debug\TesterWinform.Form1.resources
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\obj\Debug\TesterWinform.Properties.Resources.resources
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\obj\Debug\TesterWinform.csproj.GenerateResource.Cache
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\obj\Debug\TesterWinform.exe
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\obj\Debug\TesterWinform.pdb
+C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\TesterWinform\bin\Debug\TesterWinform.exe.config

@@ -14,7 +14,8 @@ namespace TesterWinform
 {
     public partial class Form1 : Form
     {
-        readonly RedisClient _redisClient = new RedisClient("192.168.25.171", 6379,"7654321");
+        //readonly RedisClient _redisClient = new RedisClient("192.168.25.171", 6379,"7654321");
+        readonly RedisClient _redisClient = new RedisClient();
 
         public Form1()
         {

@@ -1,12 +1,14 @@
 ﻿using System;
 using System.CodeDom;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RedisClient_BaiCh.Config;
 
 namespace RedisClient_BaiCh
 {
@@ -71,7 +73,41 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// 
+        /// ctor(use config file)
+        /// </summary>
+        public RedisClient()
+        {
+            var config = ConfigurationManager.GetSection("RedisClient_BaiCh")  as RedisClient_BaiChSection;
+            if (config==null)
+            {
+                throw new Exception("config not found");
+            }
+
+            int intPort;
+            try
+            {
+                intPort = int.Parse(config.Connection.Port);
+            }
+            catch (Exception)
+            {
+                throw new Exception("invalid port");
+            }
+
+            ServerIp = config.Connection.Server;
+            ServerPort = intPort;
+            Auth = config.Connection.Auth;
+
+            InitTcpClient();
+            _tcpClient.Connect(ServerIp, ServerPort);
+            if (!string.IsNullOrEmpty(Auth))
+            {
+                AuthAsync().Wait();
+            }
+
+        }
+
+        /// <summary>
+        /// 初始化TCP客户端
         /// </summary>
         private void InitTcpClient()
         {
@@ -288,7 +324,6 @@ namespace RedisClient_BaiCh
         {
             var buffer = new byte[1];
             var byteList = new List<byte>();
-            string stringRead;
             byte lastBuffer = 0;
             while (true)
             {
@@ -302,7 +337,7 @@ namespace RedisClient_BaiCh
                 }
                 lastBuffer = b;
             }
-            stringRead = Encoding.UTF8.GetString(byteList.ToArray());
+            var stringRead = Encoding.UTF8.GetString(byteList.ToArray());
             //byteList.RemoveRange(byteList.Count - 2, 2);
             return stringRead.TrimEnd('\n', '\r');
         }
@@ -317,7 +352,6 @@ namespace RedisClient_BaiCh
         {
             var buffer = new byte[1];
             var byteList = new List<byte>();
-            string stringRead;
             byte lastBuffer = 0;
             var readTimes = 0;
             var lineNumber = 1;
@@ -370,7 +404,7 @@ namespace RedisClient_BaiCh
             }
             
             //byteList.RemoveRange(byteList.Count-2,2);
-            stringRead = Encoding.UTF8.GetString(byteList.ToArray());
+            var stringRead = Encoding.UTF8.GetString(byteList.ToArray());
             return stringRead.TrimEnd('\n', '\r');
         }
 
