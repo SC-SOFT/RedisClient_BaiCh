@@ -121,7 +121,7 @@ namespace TesterWinform
                 sb.Append("set key");
                 sb.Append(i);
                 sb.Append(" ");
-                sb.Append(i);
+                sb.Append("好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好");
                 sb.Append("\r\n");
             }
             sw.Start();

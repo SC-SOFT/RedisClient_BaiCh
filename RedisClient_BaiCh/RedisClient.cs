@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using RedisClient_BaiCh.Config;
@@ -37,7 +38,7 @@ namespace RedisClient_BaiCh
 
         private TcpClient _tcpClient;
 
-        private Mutex _mutex = new Mutex();
+        private readonly Mutex _mutex = new Mutex();
 
         /// <summary>
         /// ctor
@@ -45,16 +46,13 @@ namespace RedisClient_BaiCh
         /// <param name="serverIp">服务器IP</param>
         /// <param name="serverPort">服务器端口</param>
         /// <param name="auth">服务器密码</param>
-        public RedisClient(string serverIp, int serverPort,string auth)
+        public RedisClient(string serverIp, int serverPort, string auth)
         {
             ServerIp = serverIp;
             ServerPort = serverPort;
             Auth = auth;
             InitTcpClient();
-            _tcpClient.Connect(serverIp, serverPort);
-            AuthAsync().Wait();
-
-            //KeepConnection();
+            KeepConnection();
         }
 
         /// <summary>
@@ -67,9 +65,7 @@ namespace RedisClient_BaiCh
             ServerIp = serverIp;
             ServerPort = serverPort;
             InitTcpClient();
-            _tcpClient.Connect(serverIp, serverPort);
-
-            //KeepConnection();
+            KeepConnection();
         }
 
         /// <summary>
@@ -77,8 +73,8 @@ namespace RedisClient_BaiCh
         /// </summary>
         public RedisClient()
         {
-            var config = ConfigurationManager.GetSection("RedisClient_BaiCh")  as RedisClient_BaiChSection;
-            if (config==null)
+            var config = ConfigurationManager.GetSection("RedisClient_BaiCh") as RedisClient_BaiChSection;
+            if (config == null)
             {
                 throw new Exception("config not found");
             }
@@ -98,16 +94,13 @@ namespace RedisClient_BaiCh
             Auth = config.Connection.Auth;
 
             InitTcpClient();
-            _tcpClient.Connect(ServerIp, ServerPort);
-            if (!string.IsNullOrEmpty(Auth))
-            {
-                AuthAsync().Wait();
-            }
+           
+            KeepConnection();
 
         }
 
         /// <summary>
-        /// 初始化TCP客户端
+        /// 初始化TCP客户端，并进行验证（Auth）
         /// </summary>
         private void InitTcpClient()
         {
@@ -116,6 +109,11 @@ namespace RedisClient_BaiCh
                 SendTimeout = SendTimeout,
                 ReceiveTimeout = ReceiveTimeout
             };
+            _tcpClient.Connect(ServerIp, ServerPort);
+            if (!string.IsNullOrEmpty(Auth))
+            {
+                AuthAsync().Wait();
+            }
         }
 
         /// <summary>
@@ -260,32 +258,34 @@ namespace RedisClient_BaiCh
                 switch (headSymbol)
                 {
                     case "+":  //字符串回复
-                        commandMethodReturn.SimpleString = Read2NextRN();
+                        commandMethodReturn.SimpleString = ReadString2NextRN();
                         break;
                     case "-":  //异常回复
-                        commandMethodReturn.Error = Read2NextRN();
+                        commandMethodReturn.Error = ReadString2NextRN();
                         break;
                     case ":":  //整数回复
-                        commandMethodReturn.Integer = int.Parse(Read2NextRN());
+                        commandMethodReturn.Integer = int.Parse(ReadString2NextRN());
                         break;
                     case "$":  //块回复
-                        var length = Read2NextRN();
+                        var length = ReadString2NextRN();
                         if (length == "-1")
                         {
                             break;
                         }
-                        var content = Read2NextRN();
+                        //var content = Read2NextRN();
+                        var content = ReadSpecialBytes(int.Parse(length)+2);  //+2意在读取最后的\r\n
                         commandMethodReturn.BulkStrings = content;
                         break;
                     case "*":  //多块回复
-                        var blockCount = int.Parse(Read2NextRN());
-                        if (blockCount==0)
+                        var blockCount = int.Parse(ReadString2NextRN());
+                        if (blockCount == 0)
                         {
                             break;
                         }
-                        var forCount = blockCount * 2;
-                        var data = Read2NextRN(forCount, -1);
-                        commandMethodReturn.Arrays = data;
+                        //var forCount = blockCount * 2;
+                        commandMethodReturn.Arrays = ReadBulkStrings(blockCount);
+                        //var data = Read2NextRN(forCount, -1);
+                        //commandMethodReturn.Arrays = data;
 
                         #region 性能优化前
 
@@ -304,6 +304,9 @@ namespace RedisClient_BaiCh
                         #endregion
 
                         break;
+                    default:
+                        commandMethodReturn.Error = "不支持的响应头标记";
+                        break;
                 }
                 rtn.Add(commandMethodReturn);
             }
@@ -317,10 +320,45 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
+        /// 读取块数据
+        /// </summary>
+        /// <param name="times"></param>
+        /// <returns></returns>
+        private string ReadBulkStrings(int times)
+        {
+            //var regexInt = new Regex(@"\d");
+            var sb=new StringBuilder();
+            for (int i = 0; i < times; i++)
+            {
+                var head = ReadString2NextRN();
+                sb.AppendLine(head);
+                //var length = int.Parse(regexInt.Match(head).Value)+2;  //+2意在读取最后的\r\n
+                //var length = int.Parse(new string(head.Skip(1).ToArray()))+2;  //+2意在读取最后的\r\n
+                var length = int.Parse(head.Substring(1, head.Length - 1)) + 2;  //+2意在读取最后的\r\n
+                sb.Append(ReadSpecialBytes(length));
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 读取指定的字节数
+        /// </summary>
+        /// <param name="bytesCount"></param>
+        /// <returns></returns>
+        private string ReadSpecialBytes(int bytesCount)
+        {
+            var buffer = new byte[bytesCount];
+            _tcpClient.Client.Receive(buffer);
+            var stringRead = Encoding.UTF8.GetString(buffer);
+            return stringRead;
+        }
+
+        /// <summary>
         /// 读取到下一个响应结束标记（\r\n）
         /// </summary>
         /// <returns></returns>
-        private string Read2NextRN()
+        private string ReadString2NextRN()
         {
             var buffer = new byte[1];
             var byteList = new List<byte>();
@@ -402,7 +440,7 @@ namespace RedisClient_BaiCh
                     lastBuffer = b;
                 }
             }
-            
+
             //byteList.RemoveRange(byteList.Count-2,2);
             var stringRead = Encoding.UTF8.GetString(byteList.ToArray());
             return stringRead.TrimEnd('\n', '\r');
@@ -440,10 +478,11 @@ namespace RedisClient_BaiCh
             {
                 var res = Command("ping");  //尝试与Redis服务器通信
                 Debug.Print(res.First().SimpleString);
-                return string.Equals(res.First().SimpleString.Trim(), "+pong", StringComparison.CurrentCultureIgnoreCase);  //判断通信结果
+                return string.Equals(res.First().SimpleString.Trim(), "pong", StringComparison.CurrentCultureIgnoreCase);  //判断通信结果
             }
             catch (Exception)
             {
+                Debug.Print("lost connection");
                 return false;
             }
         }
@@ -462,7 +501,8 @@ namespace RedisClient_BaiCh
                 // ignored
             }
             InitTcpClient();  //初始化新连接
-            _tcpClient.Connect(ServerIp, ServerPort);  //重新连接
+
+            Debug.Print("reconnected");
         }
 
         #endregion
@@ -525,7 +565,7 @@ namespace RedisClient_BaiCh
             sb.Append("*Arrays：");
             sb.AppendLine(Arrays);
             sb.Append("ExecuteTime(ms)：");
-            sb.AppendLine((ExecuteTime*1000).ToString("F7"));
+            sb.AppendLine((ExecuteTime * 1000).ToString("F7"));
 
             return sb.ToString();
         }
