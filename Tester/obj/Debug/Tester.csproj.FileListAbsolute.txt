@@ -1,7 +1,0 @@
-C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\Tester\bin\Debug\Tester.exe
-C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\Tester\bin\Debug\Tester.pdb
-C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\Tester\bin\Debug\RedisClient_BaiCh.dll
-C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\Tester\bin\Debug\RedisClient_BaiCh.pdb
-C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\Tester\obj\Debug\Tester.csprojResolveAssemblyReference.cache
-C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\Tester\obj\Debug\Tester.exe
-C:\Users\baich\Desktop\RedisClient_BaiCh_正向开发的Redis客户端\Tester\obj\Debug\Tester.pdb
