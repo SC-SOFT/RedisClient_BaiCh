@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using RedisClient_BaiCh.CmdReturnEntities;
 using RedisClient_BaiCh.Config;
 
 namespace RedisClient_BaiCh
@@ -41,7 +42,7 @@ namespace RedisClient_BaiCh
         private readonly Mutex _mutex = new Mutex();
 
         /// <summary>
-        /// ctor
+        /// 使用服务器IP，端口和密码初始化新的Redis客户端
         /// </summary>
         /// <param name="serverIp">服务器IP</param>
         /// <param name="serverPort">服务器端口</param>
@@ -56,7 +57,7 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// ctor
+        /// 使用服务器IP，端口初始化新的Redis客户端
         /// </summary>
         /// <param name="serverIp">服务器IP</param>
         /// <param name="serverPort">服务器端口</param>
@@ -69,7 +70,7 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// ctor(use config file)
+        /// 使用配置文件初始化新的Redis客户端
         /// </summary>
         public RedisClient()
         {
@@ -94,7 +95,7 @@ namespace RedisClient_BaiCh
             Auth = config.Connection.Auth;
 
             InitTcpClient();
-           
+
             KeepConnection();
 
         }
@@ -117,7 +118,7 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// Auth
+        /// 进行密码验证
         /// </summary>
         /// <returns></returns>
         public Task<RedisCmdReturnAuth> AuthAsync()
@@ -146,12 +147,16 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// Set
+        /// 设置指定键的值
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
+        /// <param name="key">指定键</param>
+        /// <param name="value">指定值</param>
+        /// <param name="ex">过期时间（秒）</param>
+        /// <param name="px">过期时间（毫秒）</param>
+        /// <param name="nx">指定的key不存在的时候才会设置key的值</param>
+        /// <param name="xx">指定的key存在的时候才会设置key的值</param>
         /// <returns></returns>
-        public Task<RedisCmdReturnSet> SetAsync(string key, string value)
+        public Task<RedisCmdReturnSet> SetAsync(string key, string value, int ex = -1, int px = -1, bool nx = false, bool xx = false)
         {
             var rtn = new Task<RedisCmdReturnSet>(delegate
             {
@@ -159,9 +164,31 @@ namespace RedisClient_BaiCh
                 var sb = new StringBuilder();
                 sb.Append("set ");
                 sb.Append(key);
-                sb.Append(" ");
+                sb.Append(" \"");
                 sb.Append(value);
+                sb.Append("\"");
+
+                if (ex!=-1)
+                {
+                    sb.Append(" ex ");
+                    sb.Append(ex);
+                }
+                if (px != -1)
+                {
+                    sb.Append(" px ");
+                    sb.Append(px);
+                }
+                if (nx)
+                {
+                    sb.Append(" nx");
+                }
+                if (xx)
+                {
+                    sb.Append(" xx");
+                }
+
                 sb.Append("\r\n");
+
                 var res = Command(sb.ToString());
                 var redisCmdReturnSet = new RedisCmdReturnSet(res.First());
                 return redisCmdReturnSet;
@@ -171,9 +198,45 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// Get
+        /// 设置多个键和其对应值，根据索引确定对应关系
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="keys">包含所有键的数组</param>
+        /// <param name="values">包含值的数组</param>
+        /// <returns></returns>
+        public Task<RedisCmdReturnMSet> MSetAsync(string[] keys, string[] values)
+        {
+            if (!keys.Any() ||
+                (values.Length != keys.Length))
+            {
+                throw new Exception("参数keys和values必须是等长的非空数组");
+            }
+
+            var rtn = new Task<RedisCmdReturnMSet>(delegate
+            {
+
+                var sb = new StringBuilder();
+                sb.Append("mset ");
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    sb.Append(keys[i]);
+                    sb.Append(" \"");
+                    sb.Append(values[i]);
+                    sb.Append("\" ");
+                }
+                sb.Append("\r\n");
+
+                var res = Command(sb.ToString());
+                var redisCmdReturnMSet = new RedisCmdReturnMSet(res.First());
+                return redisCmdReturnMSet;
+            });
+            rtn.Start();
+            return rtn;
+        }
+
+        /// <summary>
+        /// 获取制定键的值
+        /// </summary>
+        /// <param name="key">键</param>
         /// <returns></returns>
         public Task<RedisCmdReturnGet> GetAsync(string key)
         {
@@ -193,7 +256,32 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// Quit
+        /// 设置指定键的值并获取设置前的值
+        /// </summary>
+        /// <param name="key">制定键</param>
+        /// <param name="value">新值</param>
+        /// <returns></returns>
+        public Task<RedisCmdReturnGetSet> GetSetAsync(string key, string value)
+        {
+            var rtn = new Task<RedisCmdReturnGetSet>(delegate
+            {
+
+                var sb = new StringBuilder();
+                sb.Append("getset ");
+                sb.Append(key);
+                sb.Append(" \"");
+                sb.Append(value);
+                sb.Append("\"\r\n");
+                var res = Command(sb.ToString());
+                var redisCmdReturnGetSet = new RedisCmdReturnGetSet(res.First());
+                return redisCmdReturnGetSet;
+            });
+            rtn.Start();
+            return rtn;
+        }
+
+        /// <summary>
+        /// 通知Redis关闭连接
         /// </summary>
         /// <returns></returns>
         public Task<RedisCmdReturnQuit> QuitAsync()
@@ -201,7 +289,7 @@ namespace RedisClient_BaiCh
             var rtn = new Task<RedisCmdReturnQuit>(delegate
             {
 
-                var res = Command("Quit");
+                var res = Command("Quit\r\n");
                 var redisCmdReturnQuit = new RedisCmdReturnQuit(res.First());
                 return redisCmdReturnQuit;
             });
@@ -210,17 +298,54 @@ namespace RedisClient_BaiCh
         }
 
         /// <summary>
-        /// Keys
+        /// 查找键，使用“*”返回所有键<br/>
+        /// h?llo 匹配 hello, hallo 和 hxllo<br/>
+        /// h* llo 匹配 hllo 和 heeeello<br/>
+        /// h[ae]llo 匹配 hello 和 hallo 但是不匹配 hillo<br/>
+        /// h[^ e]llo 匹配 hallo, hbllo 但是不匹配 hello<br/>
+        /// h[a - b]llo 匹配 hallo 和 hbllo
         /// </summary>
+        /// <param name="pattern">筛选条件</param>
         /// <returns></returns>
-        public Task<RedisCmdReturnKeys> Keys()
+        public Task<RedisCmdReturnKeys> KeysAsync(string pattern)
         {
+            if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrEmpty(pattern))
+            {
+                throw new Exception("必须指定patter参数");
+            }
             var rtn = new Task<RedisCmdReturnKeys>(delegate
             {
-
-                var res = Command("Quit");
+                var sb=new StringBuilder();
+                sb.Append("keys ");
+                sb.Append(pattern);
+                sb.Append("\r\n");
+                var res = Command(sb.ToString());
                 var redisCmdReturnKeys = new RedisCmdReturnKeys(res.First());
                 return redisCmdReturnKeys;
+            });
+            rtn.Start();
+            return rtn;
+        }
+
+        /// <summary>
+        /// 追加指定的值到指定的键
+        /// </summary>
+        /// <param name="key">指定的键</param>
+        /// <param name="value">指定的值</param>
+        /// <returns></returns>
+        public Task<RedisCmdReturnAppend> AppendAsync(string key, string value)
+        {
+            var rtn = new Task<RedisCmdReturnAppend>(delegate
+            {
+                var sb = new StringBuilder();
+                sb.Append("append ");
+                sb.Append(key);
+                sb.Append(" ");
+                sb.Append(value);
+                sb.Append("\r\n");
+                var res = Command(sb.ToString());
+                var redisCmdReturnAppend = new RedisCmdReturnAppend(res.First());
+                return redisCmdReturnAppend;
             });
             rtn.Start();
             return rtn;
@@ -273,7 +398,7 @@ namespace RedisClient_BaiCh
                             break;
                         }
                         //var content = Read2NextRN();
-                        var content = ReadSpecialBytes(int.Parse(length)+2);  //+2意在读取最后的\r\n
+                        var content = ReadSpecialBytes(int.Parse(length) + 2);  //+2意在读取最后的\r\n
                         commandMethodReturn.BulkStrings = content;
                         break;
                     case "*":  //多块回复
@@ -327,7 +452,7 @@ namespace RedisClient_BaiCh
         private string ReadBulkStrings(int times)
         {
             //var regexInt = new Regex(@"\d");
-            var sb=new StringBuilder();
+            var sb = new StringBuilder();
             for (int i = 0; i < times; i++)
             {
                 var head = ReadString2NextRN();
@@ -477,7 +602,7 @@ namespace RedisClient_BaiCh
             try
             {
                 var res = Command("ping");  //尝试与Redis服务器通信
-                Debug.Print(res.First().SimpleString);
+                Debug.Print(string.Concat(res.First().SimpleString," ", DateTime.Now.ToString("O")));
                 return string.Equals(res.First().SimpleString.Trim(), "pong", StringComparison.CurrentCultureIgnoreCase);  //判断通信结果
             }
             catch (Exception)
