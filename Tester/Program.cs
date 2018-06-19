@@ -56,6 +56,7 @@ namespace Tester
                 }
                 Console.WriteLine(sw.Elapsed.TotalSeconds.ToString("F7"));
                 sw.Stop();
+
                 Console.ReadLine();
                 Console.Clear();
             }
